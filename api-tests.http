@@ -1,0 +1,142 @@
+### Chat-Orchestra API Tests
+### Base URL: http://localhost:8081
+
+### Variables
+@baseUrl = http://localhost:8081
+@sessionId = 71fe7bdb-a758-48e1-b7ad-f6932ae8af6a
+
+### 1. Health Check
+GET {{baseUrl}}/actuator/health
+
+### 2. Start Conversation
+POST {{baseUrl}}/api/conversation/start
+Content-Type: application/json
+
+{
+  "user_id": "테스트유저"
+}
+
+### 3. Post Message (USER)
+POST {{baseUrl}}/api/conversation/{{sessionId}}/message
+Content-Type: application/json
+
+{
+  "role": "USER",
+  "content": "안녕하세요! 오늘 날씨가 좋네요."
+}
+
+### 4. Post Message (ASSISTANT)
+POST {{baseUrl}}/api/conversation/{{sessionId}}/message
+Content-Type: application/json
+
+{
+  "role": "ASSISTANT",
+  "content": "네, 정말 좋은 날씨입니다! 무엇을 도와드릴까요?"
+}
+
+### 5. Get Conversation
+GET {{baseUrl}}/api/conversation/{{sessionId}}?page=0&size=10
+
+### 6. Speech-to-Text (STT)
+POST {{baseUrl}}/api/stt
+Content-Type: application/json
+
+{
+  "audio_base64": "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg==",
+  "language": "ko-KR"
+}
+
+### 7. Text-to-Speech (TTS)
+POST {{baseUrl}}/api/tts
+Content-Type: application/json
+
+{
+  "text": "안녕하세요! 텍스트를 음성으로 변환합니다.",
+  "voice": "NEUTRAL",
+  "language": "ko-KR"
+}
+
+### 8. Search Index Query
+POST {{baseUrl}}/api/search-index/query
+Content-Type: application/json
+
+{
+  "query": "세종대왕 한글",
+  "top_k": 5,
+  "filters": {
+    "category": "history"
+  },
+  "session_id": "{{sessionId}}"
+}
+
+### 9. Ending Credits
+POST {{baseUrl}}/api/ending-credits
+Content-Type: application/json
+
+{
+  "session_id": "{{sessionId}}",
+  "include_duration": true
+}
+
+### 10. End Conversation
+POST {{baseUrl}}/api/conversation/{{sessionId}}/end
+Content-Type: application/json
+
+{
+  "reason": "테스트 완료"
+}
+
+### 11. Error Test - Invalid Request
+POST {{baseUrl}}/api/conversation/start
+Content-Type: application/json
+
+{
+  "invalid_field": "test"
+}
+
+### 12. Error Test - Non-existent Session
+GET {{baseUrl}}/api/conversation/00000000-0000-0000-0000-000000000000
+
+### 13. TTS with Different Voices
+POST {{baseUrl}}/api/tts
+Content-Type: application/json
+
+{
+  "text": "여성 목소리로 읽어주세요",
+  "voice": "FEMALE",
+  "language": "ko-KR"
+}
+
+### 14. TTS with Male Voice
+POST {{baseUrl}}/api/tts
+Content-Type: application/json
+
+{
+  "text": "남성 목소리로 읽어주세요",
+  "voice": "MALE",
+  "language": "ko-KR"
+}
+
+### 15. STT with English
+POST {{baseUrl}}/api/stt
+Content-Type: application/json
+
+{
+  "audio_base64": "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg==",
+  "language": "en-US"
+}
+
+### 16. Search with Different Query
+POST {{baseUrl}}/api/search-index/query
+Content-Type: application/json
+
+{
+  "query": "인공지능 머신러닝",
+  "top_k": 3
+}
+
+### 17. Get Conversation with Pagination
+GET {{baseUrl}}/api/conversation/{{sessionId}}?page=0&size=5
+
+### 18. Get Conversation Page 2
+GET {{baseUrl}}/api/conversation/{{sessionId}}?page=1&size=5

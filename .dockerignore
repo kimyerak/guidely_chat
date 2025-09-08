@@ -1,0 +1,10 @@
+.git
+.gitignore
+README.md
+Dockerfile
+.dockerignore
+build/
+.gradle/
+.idea/
+*.iml
+api-tests.http

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.guidely.chatorchestra.controller.ConversationControllerTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2025-09-04T00:06:06" hostname="Jiwonui-MacBookAir.local" time="0.159">
+  <properties/>
+  <testcase name="postMessage_ShouldReturn200AndAssistantPreview()" classname="com.guidely.chatorchestra.controller.ConversationControllerTest" time="0.147"/>
+  <testcase name="startConversation_ShouldReturn201AndSessionId()" classname="com.guidely.chatorchestra.controller.ConversationControllerTest" time="0.011"/>
+  <system-out><![CDATA[09:06:05.095 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.guidely.chatorchestra.controller.ConversationControllerTest]: ConversationControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+09:06:05.176 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.guidely.chatorchestra.ChatOrchestraApplication for test class com.guidely.chatorchestra.controller.ConversationControllerTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.5)
+
+2025-09-04 09:06:05 - Starting ConversationControllerTest using Java 17.0.16 with PID 30501 (started by jiwonyoun in /Users/jiwonyoun/Desktop/chat-orchestra)
+2025-09-04 09:06:05 - No active profile set, falling back to 1 default profile: "default"
+2025-09-04 09:06:06 - Initializing Spring TestDispatcherServlet ''
+2025-09-04 09:06:06 - Initializing Servlet ''
+2025-09-04 09:06:06 - Completed initialization in 1 ms
+2025-09-04 09:06:06 - Started ConversationControllerTest in 1.131 seconds (process running for 1.612)
+2025-09-04 09:06:06 - Posting message to session: 82a7ea2f-129b-4c40-9150-b62273604acb, role: USER
+2025-09-04 09:06:06 - Starting conversation for userId: test-user
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
