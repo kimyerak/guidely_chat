@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * Response DTO for starting a conversation
@@ -18,7 +17,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StartConversationResponse {
-    private UUID sessionId;
+    private Long sessionId;
     private String status;
     private Instant startedAt;
 }

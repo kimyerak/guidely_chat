@@ -16,22 +16,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
+import java.time.ZoneOffset;
 
 /**
  * REST controller for conversation management
  */
 @RestController
-@RequestMapping("/api/conversation")
+@RequestMapping("/api/conversations")
 @RequiredArgsConstructor
 @Validated
 @Slf4j
-@Tag(name = "Conversation Management", description = "APIs for managing conversations")
+@Tag(name = "Conversation", description = "Conversation management endpoints")
 public class ConversationController {
-    
+
     private final ConversationService conversationService;
-    
-    @PostMapping("/start")
+
+    @PostMapping
     @Operation(summary = "Start a new conversation", description = "Creates a new conversation session")
     public ResponseEntity<ResponseEnvelope<StartConversationResponse>> startConversation(
             @Valid @RequestBody StartConversationRequest request) {
@@ -44,61 +44,64 @@ public class ConversationController {
         );
         
         StartConversationResponse response = StartConversationResponse.builder()
-                .sessionId(conversation.getSessionId())
-                .status(conversation.getStatus().name())
-                .startedAt(conversation.getStartedAt())
+                .sessionId(conversation.getId())
+                .status("ACTIVE") // ERD에는 status 없으므로 하드코딩
+                .startedAt(conversation.getStartedAt().atZone(ZoneOffset.UTC).toInstant())
                 .build();
         
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ResponseEnvelope.success(response));
     }
     
-    @PostMapping("/{sessionId}/message")
+    @PostMapping("/{conversationId}/messages")
     @Operation(summary = "Post a message", description = "Adds a message to the conversation")
     public ResponseEntity<ResponseEnvelope<PostMessageResponse>> postMessage(
-            @Parameter(description = "Session ID") @PathVariable UUID sessionId,
+            @Parameter(description = "Conversation ID") @PathVariable Long conversationId,
             @Valid @RequestBody PostMessageRequest request) {
         
-        log.info("Posting message to session: {}, role: {}", sessionId, request.getRole());
+        log.info("Posting message to conversation: {}, role: {}", conversationId, request.getRole());
+        
+        // MessageRole을 String으로 변환 (ERD에서는 sender가 varchar)
+        String sender = request.getRole().name().toLowerCase();
         
         PostMessageResponse response = conversationService.appendMessage(
-                sessionId,
-                request.getRole(),
+                conversationId,
+                sender,
                 request.getContent(),
-                request.getMetadata()
+                "Mock assistant preview" // 임시
         );
         
         return ResponseEntity.ok(ResponseEnvelope.success(response));
     }
     
-    @GetMapping("/{sessionId}")
-    @Operation(summary = "Get conversation", description = "Retrieves conversation details with pagination")
+    @GetMapping("/{conversationId}")
+    @Operation(summary = "Get conversation", description = "Retrieves conversation details with messages")
     public ResponseEntity<ResponseEnvelope<GetConversationResponse>> getConversation(
-            @Parameter(description = "Session ID") @PathVariable UUID sessionId,
-            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "50") int size) {
+            @Parameter(description = "Conversation ID") @PathVariable Long conversationId,
+            @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
         
-        log.info("Getting conversation session: {}, page: {}, size: {}", sessionId, page, size);
+        log.info("Getting conversation: {}, page: {}, size: {}", conversationId, page, size);
         
-        GetConversationResponse response = conversationService.getSession(sessionId, page, size);
+        GetConversationResponse response = conversationService.getSession(conversationId, page, size);
         
         return ResponseEntity.ok(ResponseEnvelope.success(response));
     }
     
-    @PostMapping("/{sessionId}/end")
+    @PutMapping("/{conversationId}/end")
     @Operation(summary = "End conversation", description = "Ends the conversation session")
     public ResponseEntity<ResponseEnvelope<EndConversationResponse>> endConversation(
-            @Parameter(description = "Session ID") @PathVariable UUID sessionId,
+            @Parameter(description = "Conversation ID") @PathVariable Long conversationId,
             @Valid @RequestBody EndConversationRequest request) {
         
-        log.info("Ending conversation session: {}, reason: {}", sessionId, request.getReason());
+        log.info("Ending conversation: {}, reason: {}", conversationId, request.getReason());
         
-        Conversation conversation = conversationService.endSession(sessionId, request.getReason());
+        Conversation conversation = conversationService.endSession(conversationId, request.getReason());
         
         EndConversationResponse response = EndConversationResponse.builder()
-                .sessionId(conversation.getSessionId())
-                .status(conversation.getStatus().name())
-                .endedAt(conversation.getEndedAt())
+                .sessionId(conversation.getId())
+                .status("ENDED") // 하드코딩
+                .endedAt(conversation.getEndedAt().atZone(ZoneOffset.UTC).toInstant())
                 .build();
         
         return ResponseEntity.ok(ResponseEnvelope.success(response));

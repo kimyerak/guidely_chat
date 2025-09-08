@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import jakarta.validation.constraints.NotNull;
-import java.util.UUID;
 
 /**
  * Request DTO for ending credits
@@ -19,7 +18,7 @@ import java.util.UUID;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class EndingCreditsRequest {
     @NotNull(message = "Session ID is required")
-    private UUID sessionId;
+    private Long sessionId;
     
     @Builder.Default
     private boolean includeDuration = true;

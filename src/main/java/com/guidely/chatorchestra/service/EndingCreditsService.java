@@ -9,10 +9,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.UUID;
+
 
 /**
  * Service for generating ending credits
@@ -24,11 +26,11 @@ public class EndingCreditsService {
     
     private final ConversationRepository conversationRepository;
     
-    public EndingCreditsResponse generateCredits(UUID sessionId, boolean includeDuration) {
-        log.info("Generating ending credits for session: {}, includeDuration: {}", sessionId, includeDuration);
+    public EndingCreditsResponse generateCredits(Long conversationId, boolean includeDuration) {
+        log.info("Generating ending credits for conversation: {}, includeDuration: {}", conversationId, includeDuration);
         
-        Conversation conversation = conversationRepository.findById(sessionId)
-                .orElseThrow(() -> new NoSuchElementException("Conversation not found: " + sessionId));
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new NoSuchElementException("Conversation not found: " + conversationId));
         
         // Calculate message count
         int messageCount = conversation.getMessages().size();
@@ -36,9 +38,10 @@ public class EndingCreditsService {
         // Calculate duration
         long durationSec = 0;
         if (includeDuration) {
-            Instant endTime = conversation.getEndedAt() != null ? 
-                    conversation.getEndedAt() : Instant.now();
-            durationSec = endTime.getEpochSecond() - conversation.getStartedAt().getEpochSecond();
+            LocalDateTime endTime = conversation.getEndedAt() != null ? 
+                    conversation.getEndedAt() : LocalDateTime.now();
+            durationSec = endTime.atZone(ZoneOffset.UTC).toEpochSecond() - 
+                         conversation.getStartedAt().atZone(ZoneOffset.UTC).toEpochSecond();
         }
         
         // Create mock credits
@@ -58,11 +61,11 @@ public class EndingCreditsService {
                 .durationSec(durationSec)
                 .build();
         
-        log.info("Generated credits for session: {} - {} messages, {} seconds", 
-                sessionId, messageCount, durationSec);
+        log.info("Generated credits for conversation: {} - {} messages, {} seconds", 
+                conversationId, messageCount, durationSec);
         
         return EndingCreditsResponse.builder()
-                .sessionId(sessionId)
+                .sessionId(conversationId)
                 .summary(summary)
                 .credits(credits)
                 .build();

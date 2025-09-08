@@ -4,7 +4,6 @@ import com.guidely.chatorchestra.dto.conversation.GetConversationResponse;
 import com.guidely.chatorchestra.dto.conversation.PostMessageResponse;
 import com.guidely.chatorchestra.model.Conversation;
 import com.guidely.chatorchestra.model.Message;
-import com.guidely.chatorchestra.model.enums.ConversationStatus;
 import com.guidely.chatorchestra.model.enums.MessageRole;
 import com.guidely.chatorchestra.repository.ConversationRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,89 +13,71 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Service for managing conversations
- */
 @Service
 @RequiredArgsConstructor
+@Transactional
 @Slf4j
 public class ConversationService {
     
     private final ConversationRepository conversationRepository;
     
-    public Conversation startSession(String userId, java.util.Map<String, Object> metadata) {
+    public Conversation startSession(String userIdStr, java.util.Map<String, Object> metadata) {
+        Long userId = Long.parseLong(userIdStr);
         log.info("Starting conversation session for userId: {}", userId);
         
         Conversation conversation = Conversation.builder()
-                .sessionId(UUID.randomUUID())
                 .userId(userId)
-                .status(ConversationStatus.STARTED)
-                .startedAt(Instant.now())
+                .startedAt(LocalDateTime.now())
                 .build();
         
         Conversation saved = conversationRepository.save(conversation);
-        log.info("Started conversation session: {}", saved.getSessionId());
+        log.info("Started conversation session: {}", saved.getId());
         
         return saved;
     }
     
-    public PostMessageResponse appendMessage(UUID sessionId, MessageRole role, String content, 
-                                           java.util.Map<String, Object> metadata) {
-        log.info("Appending message to session: {}, role: {}", sessionId, role);
+    public PostMessageResponse appendMessage(Long conversationId, String sender, String content, 
+                                             String assistantPreview) {
+        log.info("Appending message to conversation: {}, sender: {}, content length: {}", 
+                conversationId, sender, content.length());
         
-        Conversation conversation = conversationRepository.findById(sessionId)
-                .orElseThrow(() -> new NoSuchElementException("Conversation not found: " + sessionId));
-        
-        if (conversation.getStatus() == ConversationStatus.ENDED) {
-            throw new IllegalStateException("Cannot add message to ended conversation");
-        }
-        
-        // Update status to ACTIVE if it was STARTED
-        if (conversation.getStatus() == ConversationStatus.STARTED) {
-            conversation.setStatus(ConversationStatus.ACTIVE);
-        }
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new NoSuchElementException("Conversation not found: " + conversationId));
         
         Message message = Message.builder()
-                .messageId(UUID.randomUUID())
-                .sessionId(sessionId)
-                .role(role)
+                .sender(sender)
                 .content(content)
-                .createdAt(Instant.now())
+                .createdAt(LocalDateTime.now())
                 .build();
         
-        conversation.getMessages().add(message);
+        conversation.addMessage(message);
         conversationRepository.save(conversation);
         
-        log.info("Added message: {} to session: {}", message.getMessageId(), sessionId);
-        
-        // Generate mock assistant preview for USER messages
-        String assistantPreview = null;
-        if (role == MessageRole.USER) {
-            assistantPreview = "This is a mock reply to: " + content;
-        }
+        log.info("Added message: {} to conversation: {}", message.getId(), conversationId);
         
         return PostMessageResponse.builder()
-                .messageId(message.getMessageId())
-                .sessionId(sessionId)
-                .role(role)
+                .messageId(message.getId())
+                .sessionId(conversationId)
+                .role(MessageRole.valueOf(sender.toUpperCase())) // 임시 변환
                 .content(content)
-                .createdAt(message.getCreatedAt())
+                .createdAt(message.getCreatedAt().atZone(ZoneOffset.UTC).toInstant())
                 .assistantPreview(assistantPreview)
                 .build();
     }
     
-    public GetConversationResponse getSession(UUID sessionId, int page, int size) {
-        log.info("Getting conversation session: {}, page: {}, size: {}", sessionId, page, size);
+    public GetConversationResponse getSession(Long conversationId, int page, int size) {
+        log.info("Getting conversation session: {}, page: {}, size: {}", conversationId, page, size);
         
-        Conversation conversation = conversationRepository.findById(sessionId)
-                .orElseThrow(() -> new NoSuchElementException("Conversation not found: " + sessionId));
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new NoSuchElementException("Conversation not found: " + conversationId));
         
         List<Message> messages = conversation.getMessages();
         Pageable pageable = PageRequest.of(page, size);
@@ -109,34 +90,31 @@ public class ConversationService {
         
         List<GetConversationResponse.MessageDto> messageDtos = messagePage.getContent().stream()
                 .map(msg -> GetConversationResponse.MessageDto.builder()
-                        .messageId(msg.getMessageId())
-                        .role(msg.getRole())
+                        .messageId(msg.getId())
+                        .role(MessageRole.valueOf(msg.getSender().toUpperCase())) // 임시 변환
                         .content(msg.getContent())
-                        .createdAt(msg.getCreatedAt())
+                        .createdAt(msg.getCreatedAt().atZone(ZoneOffset.UTC).toInstant())
                         .build())
                 .collect(Collectors.toList());
         
         return GetConversationResponse.builder()
-                .sessionId(sessionId)
-                .status(conversation.getStatus().name())
+                .sessionId(conversationId)
+                .status("ACTIVE") // 임시 하드코딩
                 .messages(messageDtos)
                 .total(messagePage.getTotalElements())
                 .build();
     }
     
-    public Conversation endSession(UUID sessionId, String reason) {
-        log.info("Ending conversation session: {}, reason: {}", sessionId, reason);
+    public Conversation endSession(Long conversationId, String reason) {
+        log.info("Ending conversation session: {}, reason: {}", conversationId, reason);
         
-        Conversation conversation = conversationRepository.findById(sessionId)
-                .orElseThrow(() -> new NoSuchElementException("Conversation not found: " + sessionId));
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new NoSuchElementException("Conversation not found: " + conversationId));
         
-        conversation.setStatus(ConversationStatus.ENDED);
-        conversation.setEndedAt(Instant.now());
-        conversation.setReason(reason);
-        
+        conversation.endConversation();
         Conversation saved = conversationRepository.save(conversation);
-        log.info("Ended conversation session: {}", sessionId);
         
+        log.info("Ended conversation session: {}", conversationId);
         return saved;
     }
 }

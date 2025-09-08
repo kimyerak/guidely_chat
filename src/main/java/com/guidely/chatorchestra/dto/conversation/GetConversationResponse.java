@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Response DTO for getting conversation details
@@ -20,7 +19,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class GetConversationResponse {
-    private UUID sessionId;
+    private Long sessionId;
     private String status;
     private List<MessageDto> messages;
     private long total;
@@ -31,7 +30,7 @@ public class GetConversationResponse {
     @AllArgsConstructor
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class MessageDto {
-        private UUID messageId;
+        private Long messageId;
         private MessageRole role;
         private String content;
         private Instant createdAt;

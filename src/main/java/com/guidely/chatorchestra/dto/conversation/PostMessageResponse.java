@@ -8,7 +8,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * Response DTO for posting a message
@@ -19,8 +18,8 @@ import java.util.UUID;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PostMessageResponse {
-    private UUID messageId;
-    private UUID sessionId;
+    private Long messageId;
+    private Long sessionId;
     private MessageRole role;
     private String content;
     private Instant createdAt;

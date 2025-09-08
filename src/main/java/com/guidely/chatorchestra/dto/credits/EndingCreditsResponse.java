@@ -8,7 +8,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Response DTO for ending credits
@@ -19,7 +18,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class EndingCreditsResponse {
-    private UUID sessionId;
+    private Long sessionId;
     private SummaryDto summary;
     private List<Credit> credits;
 
