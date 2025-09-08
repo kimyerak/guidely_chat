@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  chat-orchestra:
+    build: .
+    ports:
+      - "8081:8081"
+    environment:
+      - DB_HOST=dbguidey2.mysql.database.azure.com
+      - DB_PORT=3306
+      - DB_NAME=guidely
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JPA_DDL_AUTO=update
+      - JPA_SHOW_SQL=false
+      - SERVER_PORT=8081
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped 
