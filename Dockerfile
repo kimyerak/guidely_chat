@@ -26,7 +26,7 @@ WORKDIR /app
 # Copy the built jar from builder stage
 COPY --from=builder /app/build/libs/*.jar app.jar
 
-# Expose port
+# Expose port (8081)
 EXPOSE 8081
 
 # Set environment variables
@@ -35,7 +35,7 @@ ENV SERVER_PORT=8081
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8081/actuator/health || exit 1
+  CMD curl -f http://localhost:${SERVER_PORT}/actuator/health || exit 1
 
 # Run the application
-ENTRYPOINT ["sh", "-c", "java  -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar --server.port=${SERVER_PORT}"]
