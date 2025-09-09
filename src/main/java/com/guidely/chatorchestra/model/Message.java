@@ -27,7 +27,7 @@ public class Message {
     private Conversation conversation;
     
     @Column(nullable = false)
-    private String sender;
+    private String speaker;
     
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;

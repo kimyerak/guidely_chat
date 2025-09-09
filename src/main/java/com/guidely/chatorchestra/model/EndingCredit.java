@@ -25,9 +25,6 @@ public class EndingCredit {
     @JoinColumn(name = "conversation_id", nullable = false)
     private Conversation conversation;
     
-    @Column(name = "line_order", nullable = false)
-    private Integer lineOrder;
-    
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
     

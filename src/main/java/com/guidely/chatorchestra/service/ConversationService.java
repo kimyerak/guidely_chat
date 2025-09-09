@@ -41,16 +41,16 @@ public class ConversationService {
         return saved;
     }
     
-    public PostMessageResponse appendMessage(Long conversationId, String sender, String content, 
+    public PostMessageResponse appendMessage(Long conversationId, String speaker, String content, 
                                              String assistantPreview) {
-        log.info("Appending message to conversation: {}, sender: {}, content length: {}", 
-                conversationId, sender, content.length());
+        log.info("Appending message to conversation: {}, speaker: {}, content length: {}", 
+                conversationId, speaker, content.length());
         
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new NoSuchElementException("Conversation not found: " + conversationId));
         
         Message message = Message.builder()
-                .sender(sender)
+                .speaker(speaker)
                 .content(content)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -63,7 +63,7 @@ public class ConversationService {
         return PostMessageResponse.builder()
                 .messageId(message.getId())
                 .sessionId(conversationId)
-                .role(MessageRole.valueOf(sender.toUpperCase())) // 임시 변환
+                .role(MessageRole.valueOf(speaker.toUpperCase())) // 임시 변환
                 .content(content)
                 .createdAt(message.getCreatedAt().atZone(ZoneOffset.UTC).toInstant())
                 .assistantPreview(assistantPreview)
@@ -88,7 +88,7 @@ public class ConversationService {
         List<GetConversationResponse.MessageDto> messageDtos = messagePage.getContent().stream()
                 .map(msg -> GetConversationResponse.MessageDto.builder()
                         .messageId(msg.getId())
-                        .role(MessageRole.valueOf(msg.getSender().toUpperCase())) // 임시 변환
+                        .role(MessageRole.valueOf(msg.getSpeaker().toUpperCase())) // 임시 변환
                         .content(msg.getContent())
                         .createdAt(msg.getCreatedAt().atZone(ZoneOffset.UTC).toInstant())
                         .build())

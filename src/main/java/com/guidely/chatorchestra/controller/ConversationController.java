@@ -58,12 +58,12 @@ public class ConversationController {
         
         log.info("Posting message to conversation: {}, role: {}", conversationId, request.getRole());
         
-        // MessageRole을 String으로 변환 (ERD에서는 sender가 varchar)
-        String sender = request.getRole().name().toLowerCase();
+        // MessageRole을 String으로 변환 (ERD에서는 speaker가 varchar)
+        String speaker = request.getRole().name().toLowerCase();
         
         PostMessageResponse response = conversationService.appendMessage(
                 conversationId,
-                sender,
+                speaker,
                 request.getContent(),
                 "Mock assistant preview" // 임시
         );
