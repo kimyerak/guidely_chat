@@ -34,8 +34,6 @@ public class Conversation {
     @Column(name = "ended_at")
     private LocalDateTime endedAt;
     
-
-    
     @OneToMany(mappedBy = "conversation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private List<Message> messages = new ArrayList<>();

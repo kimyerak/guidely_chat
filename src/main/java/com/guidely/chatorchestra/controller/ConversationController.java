@@ -39,8 +39,7 @@ public class ConversationController {
         log.info("Starting conversation for userId: {}", request.getUserId());
         
         Conversation conversation = conversationService.startSession(
-                request.getUserId(), 
-                request.getMetadata()
+                request.getUserId()
         );
         
         StartConversationResponse response = StartConversationResponse.builder()

@@ -25,8 +25,6 @@ public class PostMessageRequest {
     
     @NotBlank(message = "Content is required")
     private String content;
-    
-    private Map<String, Object> metadata;
 }
 
 

@@ -29,7 +29,7 @@ public class ConversationService {
     
     private final ConversationRepository conversationRepository;
     
-    public Conversation startSession(String userIdStr, java.util.Map<String, Object> metadata) {
+    public Conversation startSession(String userIdStr) {
         Long userId = Long.parseLong(userIdStr);
         log.info("Starting conversation session for userId: {}", userId);
         

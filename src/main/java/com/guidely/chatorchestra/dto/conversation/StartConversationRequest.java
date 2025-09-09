@@ -20,8 +20,6 @@ import java.util.Map;
 public class StartConversationRequest {
     @NotBlank(message = "User ID is required")
     private String userId;
-    
-    private Map<String, Object> metadata;
 }
 
 
