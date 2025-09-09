@@ -50,7 +50,4 @@ springdoc:
     - group: 'Chat-Orchestra'
       paths-to-match: '/api/**'
 
-# RAG 서버 설정
-rag:
-  server:
-    url: ${RAG_SERVER_URL:http://localhost:8000}
+# Pure MSA: Client calls RAG server directly

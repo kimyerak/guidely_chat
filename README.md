@@ -4,13 +4,14 @@ A production-ready API server for managing conversations with RAG integration an
 
 ## Overview
 
-Chat-Orchestra is a Spring Boot 3.5.5 application that provides a clean API for managing conversations with RAG (Retrieval-Augmented Generation) integration. It focuses on core conversation management while clients interact directly with RAG servers for AI responses and summaries. It's designed with clean architecture principles and MSA best practices.
+Chat-Orchestra is a Spring Boot 3.5.5 application that provides a clean API for managing conversations following Pure MSA principles. It focuses solely on conversation storage and management, while clients interact directly with RAG servers for AI responses and summaries. This design ensures loose coupling, service independence, and fault isolation.
 
 ## Features
 
-- **Conversation Management**: Start, manage, and end conversation sessions
-- **RAG Chat Integration**: AI-powered conversation with external RAG server
-- **Database Integration**: MySQL with JPA/Hibernate for conversation storage
+- **Pure Conversation Management**: Start, manage, and end conversation sessions
+- **Message Storage**: Store user and assistant messages with timestamps
+- **Database Integration**: MySQL with JPA/Hibernate for persistent storage
+- **MSA Compliance**: Loose coupling with external services (RAG servers)
 - **OpenAPI Documentation**: Swagger UI for API exploration
 - **Global Exception Handling**: Consistent error responses
 - **CORS Support**: Configured for frontend development
@@ -48,6 +49,70 @@ Chat-Orchestra is a Spring Boot 3.5.5 application that provides a clean API for 
    - API Base URL: `http://localhost:8081`
    - Swagger UI: `http://localhost:8081/swagger-ui.html`
    - Health Check: `http://localhost:8081/actuator/health`
+
+## MSA Architecture
+
+### Service Responsibilities
+
+**Chat-Orchestra (This Service):**
+- ✅ Conversation session management (start/end)
+- ✅ Message storage and retrieval
+- ✅ Conversation history tracking
+
+**RAG Server (External Service):**
+- ✅ AI response generation (`POST /chat`)
+- ✅ Conversation summarization (`POST /conversation/summarize`)
+
+### Client Integration Pattern
+
+```javascript
+// 1. Start conversation
+const conversation = await fetch('/api/conversations', { method: 'POST' });
+const { sessionId } = await conversation.json();
+
+// 2. Save user message
+await fetch(`/api/conversations/${sessionId}/messages`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    role: 'USER',
+    content: 'Hello, how are you?'
+  })
+});
+
+// 3. Get AI response from RAG server
+const aiResponse = await fetch('http://rag-server:8000/chat', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    message: 'Hello, how are you?',
+    sessionId: sessionId
+  })
+});
+const { response } = await aiResponse.json();
+
+// 4. Save AI response
+await fetch(`/api/conversations/${sessionId}/messages`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    role: 'ASSISTANT',
+    content: response
+  })
+});
+
+// 5. End conversation
+await fetch(`/api/conversations/${sessionId}/end`, {
+  method: 'PUT',
+  body: JSON.stringify({ reason: 'User ended conversation' })
+});
+
+// 6. Get conversation summary from RAG server
+const summary = await fetch('http://rag-server:8000/conversation/summarize', {
+  method: 'POST',
+  body: JSON.stringify({ sessionId, count: 10 })
+});
+```
 
 ## API Endpoints
 
