@@ -4,18 +4,18 @@ FROM gradle:8.11.1-jdk17 AS builder
 # Set working directory
 WORKDIR /app
 
-# Copy gradle files
-COPY build.gradle gradlew ./
+# Copy gradle wrapper and build file first
+COPY gradlew gradlew.bat build.gradle ./
 COPY gradle/ gradle/
+
+# Give execute permission to gradlew
+RUN chmod +x gradlew
 
 # Copy source code
 COPY src/ src/
 
-# Give execute permission to gradlew
-RUN chmod +x ./gradlew
-
 # Build the application
-RUN ./gradlew clean build -x test
+RUN gradle clean build -x test
 
 # Runtime stage
 FROM eclipse-temurin:17-jre
