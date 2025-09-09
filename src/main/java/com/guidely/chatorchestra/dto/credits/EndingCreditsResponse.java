@@ -21,6 +21,7 @@ public class EndingCreditsResponse {
     private Long sessionId;
     private SummaryDto summary;
     private List<Credit> credits;
+    private List<String> summaries; // 🔥 NEW: 감성적 요약 10줄
 
     @Data
     @Builder
