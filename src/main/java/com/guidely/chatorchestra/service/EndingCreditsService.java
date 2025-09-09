@@ -212,7 +212,7 @@ public class EndingCreditsService {
             // 대화 내용을 RAG 서버 형식으로 변환
             RagSummaryRequest request = buildRagSummaryRequest(conversation);
             
-            String url = ragServerUrl + "/api/conversation/summarize";
+            String url = ragServerUrl + "/conversation/summarize";
             log.info("Calling RAG server for summary: {}", url);
             
             RagSummaryResponse response = restTemplate.postForObject(url, request, RagSummaryResponse.class);
