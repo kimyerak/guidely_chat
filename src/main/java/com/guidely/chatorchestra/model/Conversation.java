@@ -34,11 +34,7 @@ public class Conversation {
     @Column(name = "ended_at")
     private LocalDateTime endedAt;
     
-    @ElementCollection
-    @CollectionTable(name = "conversation_metadata", joinColumns = @JoinColumn(name = "conversation_id"))
-    @MapKeyColumn(name = "metadata_key")
-    @Column(name = "metadata_value")
-    private Map<String, Object> metadata;
+
     
     @OneToMany(mappedBy = "conversation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
