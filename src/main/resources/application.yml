@@ -8,13 +8,13 @@ spring:
     property-naming-strategy: SNAKE_CASE
     default-property-inclusion: NON_NULL
   datasource:
-    url: jdbc:mysql://${DB_HOST:dbguidey2.mysql.database.azure.com}:${DB_PORT:3306}/${DB_NAME:guidely}?useSSL=true&requireSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://dbguidey2.mysql.database.azure.com:3306/guidely?useSSL=true&requireSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:update}
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
     show-sql: ${JPA_SHOW_SQL:false}
     properties:
       hibernate:
