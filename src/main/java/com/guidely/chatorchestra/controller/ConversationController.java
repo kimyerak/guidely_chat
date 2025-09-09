@@ -15,6 +15,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClientException;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.ZoneOffset;
 
@@ -30,6 +33,10 @@ import java.time.ZoneOffset;
 public class ConversationController {
 
     private final ConversationService conversationService;
+    private final RestTemplate restTemplate = new RestTemplate();
+    
+    @Value("${rag.server.url:http://localhost:8000}")
+    private String ragServerUrl;
 
     @PostMapping
     @Operation(summary = "Start a new conversation", description = "Creates a new conversation session")
@@ -72,7 +79,7 @@ public class ConversationController {
     }
     
     @PostMapping("/{conversationId}/chat")
-    @Operation(summary = "RAG Chat", description = "Process user message with RAG and return AI response")
+    @Operation(summary = "RAG Chat", description = "Process user message with RAG server and store conversation")
     public ResponseEntity<ResponseEnvelope<PostMessageResponse>> ragChat(
             @Parameter(description = "Conversation ID") @PathVariable Long conversationId,
             @Valid @RequestBody PostMessageRequest request,
@@ -81,7 +88,7 @@ public class ConversationController {
         log.info("RAG Chat - conversationId: {}, role: {}, content length: {}, character: {}", 
                 conversationId, request.getRole(), request.getContent().length(), character);
         
-        // 1. 먼저 사용자 메시지를 DB에 저장
+        // 1. 사용자 메시지를 DB에 저장
         PostMessageResponse userMessage = conversationService.appendMessage(
                 conversationId,
                 request.getRole().name().toLowerCase(),
@@ -89,32 +96,98 @@ public class ConversationController {
                 null
         );
         
-        // 2. RAG 응답 생성 (실제로는 외부 RAG 서버 호출)
-        String ragResponse = generateRagResponse(request.getContent(), character);
-        
-        // 3. Assistant 응답을 DB에 저장
-        PostMessageResponse assistantMessage = conversationService.appendMessage(
-                conversationId,
-                "assistant",
-                ragResponse,
-                "RAG response"
-        );
-        
-        return ResponseEntity.ok(ResponseEnvelope.success(assistantMessage));
+        try {
+            // 2. RAG 서버에 채팅 요청
+            String aiResponse = callRagServerForChat(request.getContent(), conversationId, character);
+            
+            // 3. AI 응답을 DB에 저장
+            PostMessageResponse assistantMessage = conversationService.appendMessage(
+                    conversationId,
+                    "assistant",
+                    aiResponse,
+                    "RAG server response"
+            );
+            
+            return ResponseEntity.ok(ResponseEnvelope.success(assistantMessage));
+            
+        } catch (Exception e) {
+            log.error("Failed to call RAG server for conversation: {}", conversationId, e);
+            
+            // 4. RAG 서버 실패 시 Mock 응답으로 Fallback
+            String fallbackResponse = generateRagResponse(request.getContent(), character);
+            PostMessageResponse assistantMessage = conversationService.appendMessage(
+                    conversationId,
+                    "assistant", 
+                    fallbackResponse,
+                    "Fallback response (RAG server unavailable)"
+            );
+            
+            return ResponseEntity.ok(ResponseEnvelope.success(assistantMessage));
+        }
+    }
+    
+    /**
+     * RAG 서버의 /chat API 호출
+     */
+    private String callRagServerForChat(String userMessage, Long conversationId, String character) {
+        try {
+            String url = ragServerUrl + "/chat";
+            
+            // RAG 서버 요청 객체 생성
+            RagChatRequest request = RagChatRequest.builder()
+                    .message(userMessage)
+                    .sessionId(conversationId)
+                    .character(character)
+                    .build();
+            
+            log.info("Calling RAG server for chat: {}", url);
+            
+            RagChatResponse response = restTemplate.postForObject(url, request, RagChatResponse.class);
+            
+            if (response != null && response.getResponse() != null) {
+                return response.getResponse();
+            }
+            
+            throw new RuntimeException("RAG server returned empty response");
+            
+        } catch (RestClientException e) {
+            log.error("Failed to call RAG server", e);
+            throw e;
+        }
     }
     
     private String generateRagResponse(String userMessage, String character) {
-        // Mock RAG 응답 생성 (실제로는 외부 RAG 서버의 /chat API 호출)
+        // Mock RAG 응답 생성 (Fallback)
         StringBuilder response = new StringBuilder();
         
         if (character != null) {
             response.append(String.format("[%s 캐릭터로 응답] ", character));
         }
         
-        response.append("사용자의 질문 '").append(userMessage).append("'에 대한 AI 응답입니다. ");
-        response.append("실제로는 외부 RAG 서버의 /chat API를 호출하여 응답을 받아옵니다.");
+        response.append("죄송합니다. 현재 AI 서버에 연결할 수 없어 임시 응답을 드립니다. ");
+        response.append("사용자의 질문 '").append(userMessage).append("'에 대해 나중에 다시 답변드리겠습니다.");
         
         return response.toString();
+    }
+    
+    // RAG 서버 요청/응답 DTO들
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class RagChatRequest {
+        private String message;
+        private Long sessionId;
+        private String character;
+    }
+    
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class RagChatResponse {
+        private String response;
+        private Long sessionId;
     }
 
     @GetMapping("/{conversationId}")
