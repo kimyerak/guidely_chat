@@ -9,8 +9,8 @@ spring:
     default-property-inclusion: NON_NULL
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://dbguidey2.mysql.database.azure.com:3306/guidely?useSSL=true&requireSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    username: ${SPRING_DATASOURCE_USERNAME:appchat}
+    password: ${SPRING_DATASOURCE_PASSWORD:AppUserPass#123}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
