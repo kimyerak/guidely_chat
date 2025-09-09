@@ -5,7 +5,8 @@ import com.guidely.chatorchestra.dto.conversation.*;
 import com.guidely.chatorchestra.model.Conversation;
 import com.guidely.chatorchestra.model.enums.MessageRole;
 import com.guidely.chatorchestra.service.ConversationService;
-import com.guidely.chatorchestra.service.SearchIndexService; // Added import
+import com.guidely.chatorchestra.service.SearchIndexService;
+import com.guidely.chatorchestra.service.EndingCreditsService; // Added import
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,7 +34,8 @@ import com.guidely.chatorchestra.dto.search.SearchResponse;
 public class ConversationController {
 
     private final ConversationService conversationService;
-    private final SearchIndexService searchIndexService; // Added field
+    private final SearchIndexService searchIndexService;
+    private final EndingCreditsService endingCreditsService;
 
     @PostMapping
     @Operation(summary = "Start a new conversation", description = "Creates a new conversation session")
@@ -156,14 +158,25 @@ public class ConversationController {
     }
     
     @PutMapping("/{conversationId}/end")
-    @Operation(summary = "End conversation", description = "Ends the conversation session")
+    @Operation(summary = "End conversation", description = "Ends the conversation session and auto-generates ending credits")
     public ResponseEntity<ResponseEnvelope<EndConversationResponse>> endConversation(
             @Parameter(description = "Conversation ID") @PathVariable Long conversationId,
             @Valid @RequestBody EndConversationRequest request) {
         
         log.info("Ending conversation: {}, reason: {}", conversationId, request.getReason());
         
+        // 1. 대화 종료 처리
         Conversation conversation = conversationService.endSession(conversationId, request.getReason());
+        
+        // 2. 🔥 NEW: 자동으로 엔딩크레딧 생성 (비동기로 처리 가능)
+        try {
+            log.info("Auto-generating ending credits for conversation: {}", conversationId);
+            endingCreditsService.generateCredits(conversationId, true);
+            log.info("Successfully generated ending credits for conversation: {}", conversationId);
+        } catch (Exception e) {
+            log.error("Failed to generate ending credits for conversation: {}", conversationId, e);
+            // 엔딩크레딧 생성 실패해도 대화 종료는 성공으로 처리
+        }
         
         EndConversationResponse response = EndConversationResponse.builder()
                 .sessionId(conversation.getId())

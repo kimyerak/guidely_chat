@@ -5,6 +5,7 @@ import com.guidely.chatorchestra.dto.credits.EndingCreditsRequest;
 import com.guidely.chatorchestra.dto.credits.EndingCreditsResponse;
 import com.guidely.chatorchestra.service.EndingCreditsService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,19 @@ public class EndingCreditsController {
                 request.getSessionId(),
                 request.isIncludeDuration()
         );
+        
+        return ResponseEntity.ok(ResponseEnvelope.success(response));
+    }
+    
+    @GetMapping("/{conversationId}")
+    @Operation(summary = "Get ending credits", description = "Retrieves ending credits for a conversation")
+    public ResponseEntity<ResponseEnvelope<EndingCreditsResponse>> getEndingCredits(
+            @Parameter(description = "Conversation ID") @PathVariable Long conversationId,
+            @Parameter(description = "Include duration calculation") @RequestParam(defaultValue = "true") boolean includeDuration) {
+        
+        log.info("Getting ending credits for conversation: {}, includeDuration: {}", conversationId, includeDuration);
+        
+        EndingCreditsResponse response = endingCreditsService.getExistingCredits(conversationId, includeDuration);
         
         return ResponseEntity.ok(ResponseEnvelope.success(response));
     }

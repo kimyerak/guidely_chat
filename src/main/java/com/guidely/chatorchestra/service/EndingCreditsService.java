@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 
 /**
@@ -78,6 +79,68 @@ public class EndingCreditsService {
                 .summary(summary)
                 .credits(credits)
                 .summaries(summaries) // 🔥 NEW: 요약 10줄 추가
+                .build();
+    }
+    
+    /**
+     * 기존에 저장된 엔딩크레딧을 조회
+     */
+    public EndingCreditsResponse getExistingCredits(Long conversationId, boolean includeDuration) {
+        log.info("Getting existing ending credits for conversation: {}, includeDuration: {}", conversationId, includeDuration);
+        
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new NoSuchElementException("Conversation not found: " + conversationId));
+        
+        // DB에서 기존 엔딩크레딧 조회
+        List<EndingCredit> existingCredits = endingCreditRepository.findByConversationIdOrderByCreatedAtAsc(conversationId);
+        
+        if (existingCredits.isEmpty()) {
+            log.warn("No ending credits found for conversation: {}. Generating new ones...", conversationId);
+            return generateCredits(conversationId, includeDuration);
+        }
+        
+        // 기존 크레딧들을 String 리스트로 변환
+        List<String> summaries = existingCredits.stream()
+                .map(EndingCredit::getContent)
+                .collect(Collectors.toList());
+        
+        // Calculate message count
+        int messageCount = conversation.getMessages().size();
+        
+        // Calculate duration
+        long durationSec = 0;
+        if (includeDuration && conversation.getStartedAt() != null) {
+            LocalDateTime endTime = conversation.getEndedAt() != null ? 
+                    conversation.getEndedAt() : LocalDateTime.now();
+            durationSec = endTime.atZone(ZoneOffset.UTC).toEpochSecond() - 
+                         conversation.getStartedAt().atZone(ZoneOffset.UTC).toEpochSecond();
+        }
+        
+        // Create mock credits (기존 로직 유지)
+        List<Credit> credits = Arrays.asList(
+                Credit.builder()
+                        .role("User")
+                        .name("You")
+                        .build(),
+                Credit.builder()
+                        .role("Assistant")
+                        .name("Chat-Orchestra")
+                        .build()
+        );
+        
+        EndingCreditsResponse.SummaryDto summary = EndingCreditsResponse.SummaryDto.builder()
+                .messages(messageCount)
+                .durationSec(durationSec)
+                .build();
+        
+        log.info("Retrieved {} existing credits for conversation: {} - {} messages, {} seconds", 
+                existingCredits.size(), conversationId, messageCount, durationSec);
+        
+        return EndingCreditsResponse.builder()
+                .sessionId(conversationId)
+                .summary(summary)
+                .credits(credits)
+                .summaries(summaries)
                 .build();
     }
     
