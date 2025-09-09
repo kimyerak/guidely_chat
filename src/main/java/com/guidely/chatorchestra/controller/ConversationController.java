@@ -5,7 +5,6 @@ import com.guidely.chatorchestra.dto.conversation.*;
 import com.guidely.chatorchestra.model.Conversation;
 import com.guidely.chatorchestra.model.enums.MessageRole;
 import com.guidely.chatorchestra.service.ConversationService;
-import com.guidely.chatorchestra.service.SearchIndexService;
 import com.guidely.chatorchestra.service.EndingCreditsService; // Added import
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -19,8 +18,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.ZoneOffset;
-import java.util.UUID; // Added import
-import com.guidely.chatorchestra.dto.search.SearchResponse;
 
 /**
  * REST controller for conversation management
@@ -34,7 +31,6 @@ import com.guidely.chatorchestra.dto.search.SearchResponse;
 public class ConversationController {
 
     private final ConversationService conversationService;
-    private final SearchIndexService searchIndexService;
     private final EndingCreditsService endingCreditsService;
 
     @PostMapping
@@ -82,11 +78,10 @@ public class ConversationController {
     public ResponseEntity<ResponseEnvelope<PostMessageResponse>> ragChat(
             @Parameter(description = "Conversation ID") @PathVariable Long conversationId,
             @Valid @RequestBody PostMessageRequest request,
-            @RequestParam(defaultValue = "5") int topK,
             @RequestParam(required = false) String character) {
         
-        log.info("RAG Chat - conversationId: {}, role: {}, content length: {}, topK: {}, character: {}", 
-                conversationId, request.getRole(), request.getContent().length(), topK, character);
+        log.info("RAG Chat - conversationId: {}, role: {}, content length: {}, character: {}", 
+                conversationId, request.getRole(), request.getContent().length(), character);
         
         // 1. 먼저 사용자 메시지를 DB에 저장
         PostMessageResponse userMessage = conversationService.appendMessage(
@@ -96,49 +91,30 @@ public class ConversationController {
                 null
         );
         
-        // 2. RAG 검색 수행 (Search Index Service 활용)
-        SearchResponse searchResults = searchIndexService.query(
-                request.getContent(),
-                topK,
-                null,
-                null // sessionId는 UUID가 아니므로 null로 전달
-        );
+        // 2. RAG 응답 생성 (실제로는 외부 RAG 서버 호출)
+        String ragResponse = generateRagResponse(request.getContent(), character);
         
-        // 3. RAG 응답 생성 (현재는 Mock)
-        String ragResponse = generateRagResponse(request.getContent(), searchResults, character);
-        
-        // 4. Assistant 응답을 DB에 저장
+        // 3. Assistant 응답을 DB에 저장
         PostMessageResponse assistantMessage = conversationService.appendMessage(
                 conversationId,
                 "assistant",
                 ragResponse,
-                "RAG response with " + searchResults.getResults().size() + " references"
+                "RAG response"
         );
-        
-        // 5. 검색 결과를 응답에 포함 (로그로 표시)
-        log.info("RAG response generated with {} search results", searchResults.getResults().size());
         
         return ResponseEntity.ok(ResponseEnvelope.success(assistantMessage));
     }
     
-    private String generateRagResponse(String userMessage, SearchResponse searchResults, String character) {
-        // Mock RAG 응답 생성
+    private String generateRagResponse(String userMessage, String character) {
+        // Mock RAG 응답 생성 (실제로는 외부 RAG 서버의 /chat API 호출)
         StringBuilder response = new StringBuilder();
         
         if (character != null) {
             response.append(String.format("[%s 캐릭터로 응답] ", character));
         }
         
-        response.append("사용자의 질문 '").append(userMessage).append("'에 대해 ");
-        response.append(searchResults.getResults().size()).append("개의 관련 문서를 찾았습니다. ");
-        
-        // 검색 결과 기반 응답 생성
-        if (!searchResults.getResults().isEmpty()) {
-            response.append("주요 내용: ");
-            searchResults.getResults().stream()
-                    .limit(2)
-                    .forEach(result -> response.append(result.getSnippet()).append(" "));
-        }
+        response.append("사용자의 질문 '").append(userMessage).append("'에 대한 AI 응답입니다. ");
+        response.append("실제로는 외부 RAG 서버의 /chat API를 호출하여 응답을 받아옵니다.");
         
         return response.toString();
     }

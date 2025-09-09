@@ -1,18 +1,17 @@
 # Chat-Orchestra
 
-A production-ready mock API server for orchestrating conversations and integrating STT/TTS and search-index (RAG) gateway services.
+A production-ready API server for managing conversations with RAG integration and automatic summary generation.
 
 ## Overview
 
-Chat-Orchestra is a Spring Boot 3.5.5 application that provides a comprehensive API for managing conversations, speech-to-text conversion, text-to-speech synthesis, and search index integration. It's designed with clean architecture principles and includes comprehensive testing and documentation.
+Chat-Orchestra is a Spring Boot 3.5.5 application that provides a comprehensive API for managing conversations with RAG (Retrieval-Augmented Generation) integration. It automatically generates emotional conversation summaries and provides seamless integration with external RAG servers. It's designed with clean architecture principles and includes comprehensive testing and documentation.
 
 ## Features
 
 - **Conversation Management**: Start, manage, and end conversation sessions
-- **Speech-to-Text (STT)**: Mock audio transcription service
-- **Text-to-Speech (TTS)**: Mock text synthesis service
-- **Search Index Integration**: Mock RAG gateway for document search
-- **Ending Credits**: Generate conversation summaries and credits
+- **RAG Chat Integration**: AI-powered conversation with external RAG server
+- **Ending Credits**: Automatic conversation summary generation (10 emotional summaries)
+- **Database Integration**: MySQL with JPA/Hibernate
 - **OpenAPI Documentation**: Swagger UI for API exploration
 - **Global Exception Handling**: Consistent error responses
 - **CORS Support**: Configured for frontend development
