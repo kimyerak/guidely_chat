@@ -4,14 +4,13 @@ A production-ready API server for managing conversations with RAG integration an
 
 ## Overview
 
-Chat-Orchestra is a Spring Boot 3.5.5 application that provides a comprehensive API for managing conversations with RAG (Retrieval-Augmented Generation) integration. It automatically generates emotional conversation summaries and provides seamless integration with external RAG servers. It's designed with clean architecture principles and includes comprehensive testing and documentation.
+Chat-Orchestra is a Spring Boot 3.5.5 application that provides a clean API for managing conversations with RAG (Retrieval-Augmented Generation) integration. It focuses on core conversation management while clients interact directly with RAG servers for AI responses and summaries. It's designed with clean architecture principles and MSA best practices.
 
 ## Features
 
 - **Conversation Management**: Start, manage, and end conversation sessions
 - **RAG Chat Integration**: AI-powered conversation with external RAG server
-- **Ending Credits**: Automatic conversation summary generation (10 emotional summaries)
-- **Database Integration**: MySQL with JPA/Hibernate
+- **Database Integration**: MySQL with JPA/Hibernate for conversation storage
 - **OpenAPI Documentation**: Swagger UI for API exploration
 - **Global Exception Handling**: Consistent error responses
 - **CORS Support**: Configured for frontend development

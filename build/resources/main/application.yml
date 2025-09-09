@@ -50,9 +50,4 @@ springdoc:
     - group: 'Chat-Orchestra'
       paths-to-match: '/api/**'
 
-# RAG 서버 설정
-rag:
-  server:
-    url: ${RAG_SERVER_URL:http://localhost:8000}
-    enabled: ${RAG_SERVER_ENABLED:false}
-    timeout: ${RAG_SERVER_TIMEOUT:30000}
+# RAG 서버는 클라이언트에서 직접 호출
