@@ -33,19 +33,17 @@ public class ConversationController {
 
     @PostMapping
     @Operation(summary = "Start a new conversation", description = "Creates a new conversation session")
-    public ResponseEntity<ResponseEnvelope<StartConversationResponse>> startConversation(
-            @Valid @RequestBody StartConversationRequest request) {
+    public ResponseEntity<ResponseEnvelope<StartConversationResponse>> startConversation() {
         
-        log.info("Starting conversation for userId: {}", request.getUserId());
+        log.info("Starting new conversation");
         
-        Conversation conversation = conversationService.startSession(
-                request.getUserId()
-        );
+        Conversation conversation = conversationService.startSession();
         
         StartConversationResponse response = StartConversationResponse.builder()
                 .sessionId(conversation.getId())
-                .status("ACTIVE") // ERD에는 status 없으므로 하드코딩
-                .startedAt(conversation.getStartedAt().atZone(ZoneOffset.UTC).toInstant())
+                .status("CREATED") // 처음 생성 시 상태
+                .startedAt(conversation.getStartedAt() != null ? 
+                    conversation.getStartedAt().atZone(ZoneOffset.UTC).toInstant() : null)
                 .build();
         
         return ResponseEntity.status(HttpStatus.CREATED)

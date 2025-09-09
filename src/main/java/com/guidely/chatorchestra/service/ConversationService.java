@@ -29,13 +29,10 @@ public class ConversationService {
     
     private final ConversationRepository conversationRepository;
     
-    public Conversation startSession(String userIdStr) {
-        Long userId = Long.parseLong(userIdStr);
-        log.info("Starting conversation session for userId: {}", userId);
+    public Conversation startSession() {
+        log.info("Starting new conversation session");
         
         Conversation conversation = Conversation.builder()
-                .userId(userId)
-                .startedAt(LocalDateTime.now())
                 .build();
         
         Conversation saved = conversationRepository.save(conversation);

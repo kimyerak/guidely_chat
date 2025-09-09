@@ -14,11 +14,6 @@ import java.util.Optional;
  */
 @Repository
 public interface ConversationRepository extends JpaRepository<Conversation, Long> {
-    
-    /**
-     * Find conversations by user ID
-     */
-    List<Conversation> findByUserId(Long userId);
 }
 
 
