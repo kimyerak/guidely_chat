@@ -10,6 +10,14 @@ import com.guidely.chatorchestra.repository.EndingCreditRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClientException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.transaction.annotation.Transactional;
+import lombok.Data;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -26,11 +34,19 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional
 @Slf4j
 public class EndingCreditsService {
     
     private final ConversationRepository conversationRepository;
     private final EndingCreditRepository endingCreditRepository;
+    private final RestTemplate restTemplate;
+    
+    @Value("${rag.server.url:http://localhost:8080}")
+    private String ragServerUrl;
+    
+    @Value("${rag.server.enabled:false}")
+    private boolean ragServerEnabled;
     
     public EndingCreditsResponse generateCredits(Long conversationId, boolean includeDuration) {
         log.info("Generating ending credits for conversation: {}, includeDuration: {}", conversationId, includeDuration);
@@ -159,7 +175,21 @@ public class EndingCreditsService {
             return summaries;
         }
         
-        // Mock 감성적 요약 생성 (실제로는 LLM API 호출)
+        // 🔥 NEW: 실제 RAG 서버 호출 시도
+        if (ragServerEnabled) {
+            try {
+                summaries = callRagServerForSummary(conversation);
+                if (!summaries.isEmpty()) {
+                    log.info("Successfully generated summaries from RAG server for conversation: {}", conversation.getId());
+                    return summaries;
+                }
+            } catch (Exception e) {
+                log.warn("Failed to call RAG server for conversation: {}, falling back to mock", conversation.getId(), e);
+            }
+        }
+        
+        // Fallback: Mock 감성적 요약 생성
+        log.info("Using mock summary generation for conversation: {}", conversation.getId());
         summaries.add("우리의 대화가 " + messages.size() + "번의 메시지로 이어졌어");
         summaries.add("첫 번째 질문부터 마지막 답변까지");
         summaries.add("서로의 마음을 조금씩 알아가는 시간이었어");
@@ -172,6 +202,80 @@ public class EndingCreditsService {
         summaries.add("다음에 또 만날 수 있기를 바라며");
         
         return summaries;
+    }
+    
+    /**
+     * RAG 서버에 요약 생성 요청
+     */
+    private List<String> callRagServerForSummary(Conversation conversation) {
+        try {
+            // 대화 내용을 RAG 서버 형식으로 변환
+            RagSummaryRequest request = buildRagSummaryRequest(conversation);
+            
+            String url = ragServerUrl + "/api/conversation/summarize";
+            log.info("Calling RAG server for summary: {}", url);
+            
+            RagSummaryResponse response = restTemplate.postForObject(url, request, RagSummaryResponse.class);
+            
+            if (response != null && response.getSummaries() != null && !response.getSummaries().isEmpty()) {
+                return response.getSummaries();
+            }
+            
+            log.warn("RAG server returned empty summaries for conversation: {}", conversation.getId());
+            return new ArrayList<>();
+            
+        } catch (RestClientException e) {
+            log.error("Failed to call RAG server for conversation: {}", conversation.getId(), e);
+            throw e;
+        }
+    }
+    
+    /**
+     * RAG 서버 요청 객체 생성
+     */
+    private RagSummaryRequest buildRagSummaryRequest(Conversation conversation) {
+        List<RagSummaryRequest.MessageDto> messageDtos = conversation.getMessages().stream()
+                .map(msg -> RagSummaryRequest.MessageDto.builder()
+                        .role(msg.getSpeaker())
+                        .content(msg.getContent())
+                        .build())
+                .collect(Collectors.toList());
+        
+        return RagSummaryRequest.builder()
+                .sessionId(conversation.getId())
+                .messages(messageDtos)
+                .count(10) // 요약 10줄 요청
+                .build();
+    }
+    
+    // RAG 서버 요청/응답 DTO들
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RagSummaryRequest {
+        private Long sessionId;
+        private List<MessageDto> messages;
+        private int count;
+        
+        @Data
+        @Builder
+        @NoArgsConstructor
+        @AllArgsConstructor
+        public static class MessageDto {
+            private String role;
+            private String content;
+        }
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RagSummaryResponse {
+        private Long sessionId;
+        private int totalMessages;
+        private List<String> summaries;
     }
     
     /**

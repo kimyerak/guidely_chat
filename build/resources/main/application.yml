@@ -49,3 +49,10 @@ springdoc:
   group-configs:
     - group: 'Chat-Orchestra'
       paths-to-match: '/api/**'
+
+# RAG 서버 설정
+rag:
+  server:
+    url: ${RAG_SERVER_URL:http://localhost:8080}
+    enabled: ${RAG_SERVER_ENABLED:false}
+    timeout: ${RAG_SERVER_TIMEOUT:30000}
