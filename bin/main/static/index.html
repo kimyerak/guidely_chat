@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Orchestra API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        .api-link {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .api-link:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Chat Orchestra API</h1>
+        <p>대화 관리 REST API 서비스입니다.</p>
+        
+        <h3>📋 API 문서 및 테스트</h3>
+        <a href="/swagger-ui.html" class="api-link">📖 Swagger UI</a>
+        <a href="/actuator/health" class="api-link">💚 Health Check</a>
+        
+        <h3>🔗 API 엔드포인트</h3>
+        <ul>
+            <li><strong>POST</strong> /api/conversations - 대화 시작</li>
+            <li><strong>GET</strong> /api/conversations/{id} - 대화 조회</li>
+            <li><strong>POST</strong> /api/conversations/{id}/messages - 메시지 추가</li>
+            <li><strong>PUT</strong> /api/conversations/{id}/end - 대화 종료</li>
+        </ul>
+        
+        <p><small>🚀 Spring Boot 3.5.5 | Java 17 | MySQL</small></p>
+    </div>
+</body>
+</html> 
