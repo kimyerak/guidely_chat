@@ -70,22 +70,15 @@ public class ConversationService {
                 .build();
     }
     
-    public GetConversationResponse getSession(Long conversationId, int page, int size) {
-        log.info("Getting conversation session: {}, page: {}, size: {}", conversationId, page, size);
+    public GetConversationResponse getSession(Long conversationId) {
+        log.info("Getting conversation session: {}", conversationId);
         
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new NoSuchElementException("Conversation not found: " + conversationId));
         
         List<Message> messages = conversation.getMessages();
-        Pageable pageable = PageRequest.of(page, size);
         
-        int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), messages.size());
-        List<Message> pagedMessages = messages.subList(start, end);
-        
-        Page<Message> messagePage = new PageImpl<>(pagedMessages, pageable, messages.size());
-        
-        List<GetConversationResponse.MessageDto> messageDtos = messagePage.getContent().stream()
+        List<GetConversationResponse.MessageDto> messageDtos = messages.stream()
                 .map(msg -> GetConversationResponse.MessageDto.builder()
                         .messageId(msg.getId())
                         .role(MessageRole.valueOf(msg.getSpeaker().toUpperCase())) // 임시 변환
@@ -98,7 +91,7 @@ public class ConversationService {
                 .sessionId(conversationId)
                 .status("ACTIVE") // 임시 하드코딩
                 .messages(messageDtos)
-                .total(messagePage.getTotalElements())
+                .total(messages.size())
                 .build();
     }
     

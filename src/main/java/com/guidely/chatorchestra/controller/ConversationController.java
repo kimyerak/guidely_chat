@@ -79,13 +79,11 @@ public class ConversationController {
     @GetMapping("/{conversationId}")
     @Operation(summary = "Get conversation", description = "Retrieves conversation details with messages")
     public ResponseEntity<ResponseEnvelope<GetConversationResponse>> getConversation(
-            @Parameter(description = "Conversation ID") @PathVariable Long conversationId,
-            @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
+            @Parameter(description = "Conversation ID") @PathVariable Long conversationId) {
         
-        log.info("Getting conversation: {}, page: {}, size: {}", conversationId, page, size);
+        log.info("Getting conversation: {}", conversationId);
         
-        GetConversationResponse response = conversationService.getSession(conversationId, page, size);
+        GetConversationResponse response = conversationService.getSession(conversationId);
         
         return ResponseEntity.ok(ResponseEnvelope.success(response));
     }
