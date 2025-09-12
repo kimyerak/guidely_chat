@@ -1,504 +1,260 @@
-# Chat-Orchestra
+# Chat-Orchestra 🎭
 
-A production-ready API server for managing conversations with RAG integration and automatic summary generation.
+> **Pure MSA 기반 대화 세션 관리 서비스**
 
-## Overview
+Chat-Orchestra는 마이크로서비스 아키텍처 기반의 대화 세션 관리 전용 백엔드 서비스입니다. 
+대화의 생성, 메시지 추가, 조회, 종료 등 대화 세션의 전체 생명주기를 관리하며, 
+AI 응답 생성은 별도의 RAG 서버에서 처리하는 순수한 MSA 구조로 설계되었습니다.
 
-Chat-Orchestra is a Spring Boot 3.5.5 application that provides a clean API for managing conversations following Pure MSA principles. It focuses solely on conversation storage and management, while clients interact directly with RAG servers for AI responses and summaries. This design ensures loose coupling, service independence, and fault isolation.
+## 🏗️ 아키텍처
 
-## Features
-
-- **Pure Conversation Management**: Start, manage, and end conversation sessions
-- **Message Storage**: Store user and assistant messages with timestamps
-- **Database Integration**: MySQL with JPA/Hibernate for persistent storage
-- **MSA Compliance**: Loose coupling with external services (RAG servers)
-- **OpenAPI Documentation**: Swagger UI for API exploration
-- **Global Exception Handling**: Consistent error responses
-- **CORS Support**: Configured for frontend development
-- **Comprehensive Testing**: Unit and integration tests
-
-## Technology Stack
-
-- **Java**: 17
-- **Spring Boot**: 3.5.5
-- **Build Tool**: Gradle (Groovy)
-- **Documentation**: OpenAPI 3 (Swagger)
-- **Testing**: JUnit 5, MockMvc
-- **Validation**: Bean Validation (Jakarta)
-
-## Quick Start
-
-### Prerequisites
-
-- Java 17 or higher
-- Gradle 8.11.1 or higher
-
-### Running the Application
-
-1. **Clone and navigate to the project directory:**
-   ```bash
-   cd chat-orchestra
-   ```
-
-2. **Run the application:**
-   ```bash
-   ./gradlew bootRun
-   ```
-
-3. **Access the application:**
-   - API Base URL: `http://localhost:8081`
-   - Swagger UI: `http://localhost:8081/swagger-ui.html`
-   - Health Check: `http://localhost:8081/actuator/health`
-
-## MSA Architecture
-
-### Service Responsibilities
-
-**Chat-Orchestra (This Service):**
-- ✅ Conversation session management (start/end)
-- ✅ Message storage and retrieval
-- ✅ Conversation history tracking
-
-**RAG Server (External Service):**
-- ✅ AI response generation (`POST /chat`)
-- ✅ Conversation summarization (`POST /conversation/summarize`)
-
-### Client Integration Pattern
-
-```javascript
-// 1. Start conversation
-const conversation = await fetch('/api/conversations', { method: 'POST' });
-const { sessionId } = await conversation.json();
-
-// 2. Save user message
-await fetch(`/api/conversations/${sessionId}/messages`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    role: 'USER',
-    content: 'Hello, how are you?'
-  })
-});
-
-// 3. Get AI response from RAG server
-const aiResponse = await fetch('http://rag-server:8000/chat', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    message: 'Hello, how are you?',
-    sessionId: sessionId
-  })
-});
-const { response } = await aiResponse.json();
-
-// 4. Save AI response
-await fetch(`/api/conversations/${sessionId}/messages`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    role: 'ASSISTANT',
-    content: response
-  })
-});
-
-// 5. End conversation
-await fetch(`/api/conversations/${sessionId}/end`, {
-  method: 'PUT',
-  body: JSON.stringify({ reason: 'User ended conversation' })
-});
-
-// 6. Get conversation summary from RAG server
-const summary = await fetch('http://rag-server:8000/conversation/summarize', {
-  method: 'POST',
-  body: JSON.stringify({ sessionId, count: 10 })
-});
+```
+[Frontend Client]
+    ↓ REST API
+[Chat-Orchestra] ────────► [MySQL Database]
+    
+[Frontend Client]
+    ↓ Direct API Call
+[RAG Server] (별도 서비스)
 ```
 
-## API Endpoints
+- **Chat-Orchestra**: 대화 세션 관리 (현재 프로젝트)
+- **RAG Server**: AI 응답 생성 (별도 MSA 서비스)
+- **Frontend**: 클라이언트가 두 서비스를 직접 호출
 
-### Conversation Management
+## 🚀 기술 스택
 
-#### 1. Start Conversation
-```bash
-curl -X POST http://localhost:8081/api/conversation/start \
-  -H "Content-Type: application/json" \
-  -d '{"user_id":"yeon"}'
+- **Framework**: Spring Boot 3.5.5
+- **Language**: Java 17
+- **Database**: MySQL 8.0
+- **ORM**: JPA/Hibernate
+- **Documentation**: SpringDoc OpenAPI (Swagger)
+- **Build Tool**: Gradle
+- **Deployment**: Azure App Service
+
+## 📋 주요 기능
+
+### 🎯 Core Features
+- ✅ **대화 세션 생성** - 새로운 대화 시작
+- ✅ **메시지 추가** - 사용자/어시스턴트 메시지 저장
+- ✅ **대화 조회** - 세션별 메시지 히스토리 조회
+- ✅ **대화 종료** - 세션 종료 및 타임스탬프 기록
+
+### 🔧 Technical Features
+- ✅ **RESTful API** - 표준 REST API 제공
+- ✅ **데이터 검증** - Jakarta Validation 적용
+- ✅ **에러 핸들링** - 통일된 에러 응답 형식
+- ✅ **API 문서화** - Swagger UI 제공
+- ✅ **CORS 설정** - 프론트엔드 연동 지원
+
+## 🗄️ 데이터베이스 스키마
+
+```sql
+-- conversations 테이블
+CREATE TABLE conversations (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    started_at TIMESTAMP,
+    ended_at TIMESTAMP
+);
+
+-- messages 테이블  
+CREATE TABLE messages (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    conversation_id BIGINT NOT NULL,
+    speaker VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id)
+);
 ```
 
-**Response:**
+## 🔌 API 엔드포인트
+
+### 📡 Base URL
+- **개발환경**: `http://localhost:8081`
+- **운영환경**: `https://yerak-chat-cyfze4hnhbeaawc8.koreacentral-01.azurewebsites.net`
+
+### 🎪 Conversation Management
+
+#### 1. 대화 시작
+```http
+POST /api/conversations
+```
+
+**응답:**
 ```json
 {
   "success": true,
   "data": {
-    "sessionId": "123e4567-e89b-12d3-a456-426614174000",
-    "status": "STARTED",
-    "startedAt": "2024-01-15T10:30:00Z"
+    "session_id": 1,
+    "status": "CREATED",
+    "started_at": "2024-01-01T00:00:00Z"
   },
-  "timestamp": "2024-01-15T10:30:00Z"
+  "timestamp": "2024-01-01T00:00:00Z"
 }
 ```
 
-#### 2. Post Message
-```bash
-curl -X POST http://localhost:8081/api/conversation/{sessionId}/message \
-  -H "Content-Type: application/json" \
-  -d '{"role":"USER","content":"안녕"}'
+#### 2. 메시지 추가
+```http
+POST /api/conversations/{conversationId}/messages
+Content-Type: application/json
+
+{
+  "role": "USER",
+  "content": "안녕하세요!"
+}
 ```
 
-**Response:**
+**응답:**
 ```json
 {
   "success": true,
   "data": {
-    "messageId": "123e4567-e89b-12d3-a456-426614174001",
-    "sessionId": "123e4567-e89b-12d3-a456-426614174000",
+    "message_id": 1,
+    "session_id": 1,
     "role": "USER",
-    "content": "안녕",
-    "createdAt": "2024-01-15T10:30:15Z",
-    "assistantPreview": "This is a mock reply to: 안녕"
-  },
-  "timestamp": "2024-01-15T10:30:15Z"
+    "content": "안녕하세요!",
+    "created_at": "2024-01-01T00:00:00Z",
+    "assistant_preview": "Mock assistant preview"
+  }
 }
 ```
 
-#### 3. Get Conversation
-```bash
-curl "http://localhost:8081/api/conversation/{sessionId}?page=0&size=50"
+#### 3. 대화 조회
+```http
+GET /api/conversations/{conversationId}
 ```
 
-**Response:**
+**응답:**
 ```json
 {
   "success": true,
   "data": {
-    "sessionId": "123e4567-e89b-12d3-a456-426614174000",
+    "session_id": 1,
     "status": "ACTIVE",
     "messages": [
       {
-        "messageId": "123e4567-e89b-12d3-a456-426614174001",
+        "message_id": 1,
         "role": "USER",
-        "content": "안녕",
-        "createdAt": "2024-01-15T10:30:15Z"
+        "content": "안녕하세요!",
+        "created_at": "2024-01-01T00:00:00Z"
       }
     ],
     "total": 1
-  },
-  "timestamp": "2024-01-15T10:30:20Z"
+  }
 }
 ```
 
-#### 4. End Conversation
-```bash
-curl -X POST http://localhost:8081/api/conversation/{sessionId}/end \
-  -H "Content-Type: application/json" \
-  -d '{}'
-```
+#### 4. 대화 종료
+```http
+PUT /api/conversations/{conversationId}/end
+Content-Type: application/json
 
-**Response:**
-```json
 {
-  "success": true,
-  "data": {
-    "sessionId": "123e4567-e89b-12d3-a456-426614174000",
-    "status": "ENDED",
-    "endedAt": "2024-01-15T10:35:00Z"
-  },
-  "timestamp": "2024-01-15T10:35:00Z"
+  "reason": "사용자 요청"
 }
 ```
 
-### Speech-to-Text (STT)
+## 🛠️ 개발 환경 설정
 
+### 📋 필수 요구사항
+- Java 17+
+- MySQL 8.0+
+- Gradle 8.11+
+
+### 🔧 환경 변수 설정
+`.env` 파일 생성:
+```properties
+# 서버 설정
+SERVER_PORT=8081
+
+# 데이터베이스 설정
+SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/chat_orchestra
+SPRING_DATASOURCE_USERNAME=your_username
+SPRING_DATASOURCE_PASSWORD=your_password
+
+# JPA 설정
+SPRING_JPA_HIBERNATE_DDL_AUTO=update
+JPA_SHOW_SQL=false
+```
+
+### 🚀 실행 방법
+
+1. **저장소 클론**
 ```bash
-curl -X POST http://localhost:8081/api/stt \
-  -H "Content-Type: application/json" \
-  -d '{"audio_base64":"QUJDRA==","language":"ko-KR"}'
+git clone <repository-url>
+cd chat-orchestra
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "transcript": "Transcribed 4 bytes in ko-KR",
-    "durationMs": 202,
-    "language": "ko-KR"
-  },
-  "timestamp": "2024-01-15T10:30:00Z"
-}
+2. **데이터베이스 생성**
+```sql
+CREATE DATABASE chat_orchestra;
 ```
 
-### Text-to-Speech (TTS)
-
+3. **애플리케이션 실행**
 ```bash
-curl -X POST http://localhost:8081/api/tts \
-  -H "Content-Type: application/json" \
-  -d '{"text":"안녕하세요","voice":"neutral"}'
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "audioBase64": "QVVESU867J207Iqk7Yq47ZWY7Iqk",
-    "voice": "NEUTRAL",
-    "language": "ko-KR",
-    "estimatedDurationMs": 500
-  },
-  "timestamp": "2024-01-15T10:30:00Z"
-}
-```
-
-### Search Index Integration
-
-```bash
-curl -X POST http://localhost:8081/api/search-index/query \
-  -H "Content-Type: application/json" \
-  -d '{"query":"세종대왕","top_k":3}'
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "query": "세종대왕",
-    "results": [
-      {
-        "id": "doc-1",
-        "score": 0.9,
-        "snippet": "Mock snippet about '세종대왕' - result 1"
-      },
-      {
-        "id": "doc-2",
-        "score": 0.85,
-        "snippet": "Mock snippet about '세종대왕' - result 2"
-      },
-      {
-        "id": "doc-3",
-        "score": 0.8,
-        "snippet": "Mock snippet about '세종대왕' - result 3"
-      }
-    ]
-  },
-  "timestamp": "2024-01-15T10:30:00Z"
-}
-```
-
-### Ending Credits
-
-```bash
-curl -X POST http://localhost:8081/api/ending-credits \
-  -H "Content-Type: application/json" \
-  -d '{"session_id":"{sessionId}","include_duration":true}'
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "sessionId": "123e4567-e89b-12d3-a456-426614174000",
-    "summary": {
-      "messages": 7,
-      "durationSec": 125
-    },
-    "credits": [
-      {
-        "role": "User",
-        "name": "You"
-      },
-      {
-        "role": "Assistant",
-        "name": "Chat-Orchestra"
-      }
-    ]
-  },
-  "timestamp": "2024-01-15T10:35:00Z"
-}
-```
-
-## Project Structure
-
-```
-src/
-├── main/
-│   ├── java/com/guidely/chatorchestra/
-│   │   ├── config/                 # Configuration classes
-│   │   │   ├── CorsConfig.java
-│   │   │   └── OpenApiConfig.java
-│   │   ├── controller/             # REST controllers
-│   │   │   ├── ConversationController.java
-│   │   │   ├── SttController.java
-│   │   │   ├── TtsController.java
-│   │   │   ├── SearchIndexController.java
-│   │   │   └── EndingCreditsController.java
-│   │   ├── dto/                    # Data Transfer Objects
-│   │   │   ├── ResponseEnvelope.java
-│   │   │   ├── ErrorPayload.java
-│   │   │   ├── conversation/
-│   │   │   ├── stt/
-│   │   │   ├── tts/
-│   │   │   ├── search/
-│   │   │   └── credits/
-│   │   ├── exception/              # Exception handling
-│   │   │   └── GlobalExceptionHandler.java
-│   │   ├── model/                  # Domain models
-│   │   │   ├── enums/
-│   │   │   ├── Conversation.java
-│   │   │   ├── Message.java
-│   │   │   ├── SearchResult.java
-│   │   │   └── Credit.java
-│   │   ├── repository/             # Data access layer
-│   │   │   └── ConversationRepository.java
-│   │   ├── service/                # Business logic layer
-│   │   │   ├── ConversationService.java
-│   │   │   ├── SttService.java
-│   │   │   ├── TtsService.java
-│   │   │   ├── SearchIndexService.java
-│   │   │   └── EndingCreditsService.java
-│   │   └── ChatOrchestraApplication.java
-│   └── resources/
-│       └── application.yml         # Application configuration
-└── test/
-    └── java/com/guidely/chatorchestra/
-        ├── controller/             # Controller tests
-        └── service/                # Service tests
-```
-
-## Configuration
-
-### Application Properties
-
-The application is configured via `application.yml`:
-
-```yaml
-server:
-  port: 8080
-
-spring:
-  application:
-    name: chat-orchestra
-  jackson:
-    property-naming-strategy: SNAKE_CASE
-    default-property-inclusion: NON_NULL
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "health,info"
-
-springdoc:
-  api-docs:
-    path: /api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-```
-
-### CORS Configuration
-
-CORS is configured to allow requests from:
-- `http://localhost:3000`
-- `http://localhost:5173`
-
-## Testing
-
-### Running Tests
-
-```bash
-# Run all tests
-./gradlew test
-
-# Run tests with coverage
-./gradlew test jacocoTestReport
-
-# Run specific test class
-./gradlew test --tests ConversationControllerTest
-```
-
-### Test Coverage
-
-The project includes comprehensive tests for:
-- **Controllers**: WebMvcTest for all REST endpoints
-- **Services**: Unit tests for business logic
-- **Exception Handling**: Global exception handler tests
-
-## Development
-
-### Building the Project
-
-```bash
-# Clean and build
-./gradlew clean build
-
-# Build without tests
-./gradlew build -x test
-
-# Create executable JAR
-./gradlew bootJar
-```
-
-### Running in Development Mode
-
-```bash
-# Run with hot reload (if using IDE)
 ./gradlew bootRun
-
-# Run with specific profile
-./gradlew bootRun --args='--spring.profiles.active=dev'
 ```
 
-## API Response Format
-
-All API responses follow a consistent envelope format:
-
-### Success Response
-```json
-{
-  "success": true,
-  "data": { ... },
-  "timestamp": "2024-01-15T10:30:00Z"
-}
+4. **API 문서 확인**
+```
+http://localhost:8081/swagger-ui.html
 ```
 
-### Error Response
-```json
-{
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Validation failed",
-    "details": { ... }
-  },
-  "timestamp": "2024-01-15T10:30:00Z"
-}
+## 🔍 API 문서
+
+### 📖 Swagger UI
+- **로컬**: http://localhost:8081/swagger-ui.html
+- **운영**: https://yerak-chat-cyfze4hnhbeaawc8.koreacentral-01.azurewebsites.net/swagger-ui.html
+
+### 📄 OpenAPI Spec
+- **로컬**: http://localhost:8081/api-docs
+- **운영**: https://yerak-chat-cyfze4hnhbeaawc8.koreacentral-01.azurewebsites.net/api-docs
+
+## 🎭 MSA 통신 패턴
+
+### 🔄 클라이언트 워크플로우
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant CO as Chat-Orchestra
+    participant RAG as RAG Server
+    participant DB as MySQL
+
+    C->>CO: POST /conversations (대화 시작)
+    CO->>DB: 대화 세션 생성
+    CO->>C: session_id 반환
+    
+    C->>CO: POST /conversations/{id}/messages (사용자 메시지)
+    CO->>DB: 메시지 저장
+    CO->>C: 메시지 저장 완료
+    
+    C->>RAG: POST /generate (AI 응답 요청)
+    RAG->>C: AI 응답 반환
+    
+    C->>CO: POST /conversations/{id}/messages (AI 메시지)
+    CO->>DB: AI 메시지 저장
+    
+    C->>CO: PUT /conversations/{id}/end (대화 종료)
+    CO->>DB: ended_at 업데이트
+    
+    C->>RAG: POST /conversation/summarize (요약 요청)
 ```
 
-## Error Codes
+## 🏷️ 버전 정보
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `VALIDATION_ERROR` | 400 | Request validation failed |
-| `INVALID_ARGUMENT` | 400 | Invalid argument provided |
-| `RESOURCE_NOT_FOUND` | 404 | Requested resource not found |
-| `INVALID_STATE` | 400 | Invalid operation for current state |
-| `INTERNAL_ERROR` | 500 | Unexpected server error |
+- **현재 버전**: 1.0.0-SNAPSHOT
+- **Spring Boot**: 3.5.5
+- **Java**: 17
+- **API 버전**: v1
 
-## Contributing
+## 📞 문의
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass
-6. Submit a pull request
+- **팀**: Chat-Orchestra Team
+- **이메일**: support@guidely.com
+- **라이선스**: MIT License
 
-## License
+---
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Support
-
-For support and questions, please contact the Chat-Orchestra team at support@guidely.com.
+> 💡 **참고**: 이 서비스는 대화 세션 관리만 담당하며, AI 응답 생성은 별도의 RAG 서버에서 처리됩니다.
+> 클라이언트는 필요에 따라 두 서비스를 직접 호출하여 완전한 대화 시스템을 구성할 수 있습니다.
